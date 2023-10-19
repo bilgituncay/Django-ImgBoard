@@ -4,6 +4,7 @@ from django.contrib.auth.models import User, auth
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from core.models import Profile, Post, LikePost, FollowersCount
+from direct_messages.models import Notification
 from itertools import chain
 import random, uuid
 
@@ -56,7 +57,10 @@ def index(request):
 
     suggestions_username_profile_list = list(chain(*username_profile_list))
 
-    return render(request, 'index.html', {'user_profile': user_profile, 'posts':feed_list, 'suggestions_username_profile_list': suggestions_username_profile_list[:4]})
+    notifications = Notification.objects.filter(to_user=request.user)
+    
+
+    return render(request, 'index.html', {'user_profile': user_profile, 'posts':feed_list, 'suggestions_username_profile_list': suggestions_username_profile_list[:4], 'notifications': notifications})
 
 @login_required(login_url='signin')
 def upload(request):
@@ -88,6 +92,7 @@ def like_post(request):
     post_id = request.GET.get('post_id')
 
     post = Post.objects.get(id=post_id)
+    to_user = None
 
     like_filter = LikePost.objects.filter(post_id=post_id, username=username).first()
 
@@ -96,11 +101,18 @@ def like_post(request):
         new_like.save()
         post.no_of_likes += 1
         post.save()
+        if isinstance(post.user, User):
+            to_user = post.user
+        else:
+            to_user = User.objects.get(username=post.user)
+        notification = Notification.objects.create(notification_type=1, from_user=request.user, to_user=to_user, post=post)
+
         return redirect('/')
     else:
         like_filter.delete()
         post.no_of_likes -= 1
         post.save()
+        Notification.objects.filter(notification_type=1, from_user=request.user, to_user=to_user, post=post).delete()
         return redirect('/')
 
 @login_required(login_url='signin')
@@ -144,6 +156,7 @@ def follow(request):
         else:
             new_follower = FollowersCount.objects.create(follower=follower, user=user)
             new_follower.save()
+            notification = Notification.objects.create(notification_type=3, from_user=request.user, to_user=User.objects.get(username=user))
             return redirect('profile/'+user)
 
     else:
@@ -171,6 +184,11 @@ def search(request):
         username_profile_list = list(chain(*username_profile_list))
 
     return render(request, 'search.html', {'user_profile': user_profile, 'username_profile_list': username_profile_list})
+
+def post_detail(request, id):
+    ctx={}
+    ctx["post"] = Post.objects.get(id=id)
+    return render(request, 'post_detail.html', ctx)
 
 def profile(request, pk):
     user_object = User.objects.get(username=pk)

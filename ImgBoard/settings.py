@@ -33,12 +33,14 @@ ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'core.apps.CoreConfig',
+    'direct_messages.apps.DirectMessagesConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'crispy_forms',
     
 ]
 
