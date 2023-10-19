@@ -1,0 +1,48 @@
+{% load static %}
+{% load crispy_forms_tags %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="{% static 'favicon.png' %}" rel="icon" type="image/png">
+    <title>Home</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{% static 'assets/css/icons.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/uikit.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/tailwind.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+          <div class="col-md-12 p-5">
+            <h3>Your Conversations</h3>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-12 p-5">
+            <form method="GET" action="{% url 'create-conversation' %}">
+              <button class="btn btn-light p-3" type="submit">Start a Conversation</button>
+            </form>
+          </div>
+        </div>
+        {% for conversation in conv_list.all %}
+        <div class="row mb-3">
+          <a href="{% url 'conversation' conversation.pk %}" class="card-link">
+            <div class="card col-md-12 p-5 shadow-sm">
+                <h5>{{ conversation.user }}</h5>
+                {% if conversation.last_message_text %}
+                <p>Last Message: {{ conversation.last_message_text|slice:":20" }}</p>
+                {% endif %}
+            </div>
+        </a>
+        </div>
+        {% endfor %}
+      </div>
+</body>
