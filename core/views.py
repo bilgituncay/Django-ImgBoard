@@ -1,10 +1,11 @@
 from django.shortcuts import render, redirect,get_object_or_404
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponseBadRequest, JsonResponse
 from django.contrib.auth.models import User, auth
 from django.contrib import messages
+from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from core.models import Profile, Post, LikePost, FollowersCount
-from direct_messages.models import Notification
+from direct_messages.models import *
 from itertools import chain
 import random, uuid
 
@@ -57,10 +58,25 @@ def index(request):
 
     suggestions_username_profile_list = list(chain(*username_profile_list))
 
-    notifications = Notification.objects.filter(to_user=request.user)
+    conversations = Conversation.objects.filter(Q(user=request.user) | Q(receiver=request.user)).order_by('-id')[:5]
+    last_messages = []
+    for conversation in conversations:
+        last_message = UserMessage.objects.filter(conversation=conversation).order_by('-message_date').first()
+        if last_message:
+            last_messages.append(last_message)
+
+
+    notifications = Notification.objects.filter(to_user=request.user, user_has_seen=False)
+    if request.method == 'POST':
+        for notification in notifications:
+            notification.user_has_seen = True
+            notification.save()
+        return JsonResponse({'message': 'Notifications marked as seen.'})
+    has_unseen_notifications = Notification.objects.filter(to_user=request.user, user_has_seen=False).exists()
+
     
 
-    return render(request, 'index.html', {'user_profile': user_profile, 'posts':feed_list, 'suggestions_username_profile_list': suggestions_username_profile_list[:4], 'notifications': notifications})
+    return render(request, 'index.html', {'user_profile': user_profile, 'posts':feed_list, 'suggestions_username_profile_list': suggestions_username_profile_list[:4], 'notifications': notifications, 'last_messages': last_messages, 'has_unseen_notifications': has_unseen_notifications})
 
 @login_required(login_url='signin')
 def upload(request):
